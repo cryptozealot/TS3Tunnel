@@ -39,6 +39,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <inttypes.h>
 
 void packetSniffed(u_char *userData, const struct pcap_pkthdr *pcapHeader, const u_char *packet)
 {
@@ -46,7 +47,6 @@ void packetSniffed(u_char *userData, const struct pcap_pkthdr *pcapHeader, const
     QList<Server::ClientInfo> *clients = reinterpret_cast<QList<Server::ClientInfo>*>(snifferData->Clients);
     const ether_header *ethernetHeader = (ether_header*)packet;
     const ip *ipHeader = (const ip*)((const u_char*)ethernetHeader + sizeof(ether_header));
-    const ip *ipHeader2 = (const ip*)((const u_char*)ethernetHeader);
     const udphdr *udpHeader = (const udphdr*)((const u_char*)ipHeader + sizeof(ip));
     struct ether_header* eptr;
     eptr = (struct ether_header*)packet;
@@ -67,10 +67,8 @@ void packetSniffed(u_char *userData, const struct pcap_pkthdr *pcapHeader, const
         {
             snifferData->Nb += 1;
 
-            qDebug() << "==============================";
-            qDebug() << "SessionId:" << voiceHeader->SessionId;
             printf("Source IP: %s\n", inet_ntoa(ip2->ip_src));
-            qDebug() << "==============================";
+            printf("%" PRIu64 "\n", voiceHeader->SessionId);
 
             snifferData->Mutex->lock();
             for (auto it = clients->begin(); it != clients->end(); ++it)
