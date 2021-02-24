@@ -36,13 +36,22 @@
 
 #include "Server.h"
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 void packetSniffed(u_char *userData, const struct pcap_pkthdr *pcapHeader, const u_char *packet)
 {
     Sniffer::SnifferData *snifferData = reinterpret_cast<Sniffer::SnifferData*>(userData);
     QList<Server::ClientInfo> *clients = reinterpret_cast<QList<Server::ClientInfo>*>(snifferData->Clients);
     const ether_header *ethernetHeader = (ether_header*)packet;
     const ip *ipHeader = (const ip*)((const u_char*)ethernetHeader + sizeof(ether_header));
+    const ip *ipHeader2 = (const ip*)((const u_char*)ethernetHeader);
     const udphdr *udpHeader = (const udphdr*)((const u_char*)ipHeader + sizeof(ip));
+    struct ether_header* eptr;
+    eptr = (struct ether_header*)packet;
+    struct ip* ip2;
+    ip2 = (struct ip*)(packet + sizeof(struct ether_header));
     const u_char *payload = (const u_char*)udpHeader + sizeof(udphdr);
     const u_char *voiceData = payload + sizeof(Sniffer::Ts3VoicePacketHeader);
     int32_t ethernetPaddingLength = pcapHeader->len - htons(ipHeader->ip_len) - sizeof(ether_header);
@@ -59,13 +68,8 @@ void packetSniffed(u_char *userData, const struct pcap_pkthdr *pcapHeader, const
             snifferData->Nb += 1;
 
             qDebug() << "==============================";
-            qDebug().nospace() << "Packet length: " << pcapHeader->len << ", IP total length: " << htons(ipHeader->ip_len) << ", payload length: " << payloadLength << " (" << pcapHeader->len << " - " << sizeof(ether_header) << " - " << sizeof(ip) << " - " << sizeof(udphdr) << " - " << ethernetPaddingLength << "), voice data length: " << voiceDataLength << " (packet #" << snifferData->Nb << ")";
             qDebug() << "SessionId:" << voiceHeader->SessionId;
-            qDebug() << "ControlPacketId:" << htons(voiceHeader->ControlPacketId);
-            qDebug() << "ErrorCode:" << htons(voiceHeader->ErrorCode);
-            qDebug() << "PacketType:" << static_cast<uint32_t>(voiceHeader->PacketType);
-            qDebug() << "VoicePacketId:" << htons(voiceHeader->VoicePacketId);
-            qDebug() << "CodecType:" << static_cast<uint32_t>(voiceHeader->CodecType);
+            printf("Source IP: %s\n", inet_ntoa(ip2->ip_src));
             qDebug() << "==============================";
 
             snifferData->Mutex->lock();
